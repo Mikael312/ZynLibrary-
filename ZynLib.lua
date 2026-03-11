@@ -2230,6 +2230,52 @@ task.defer(function()
 end)
 
 -- =====================
+-- TOGGLE BUTTON (Open Main Hub)
+-- =====================
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 50, 0, 50)
+toggleBtn.Position = UDim2.new(1, -60, 0, 15)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+toggleBtn.BackgroundTransparency = 0.23
+toggleBtn.Text = "Zyn"
+toggleBtn.TextColor3 = Color3.fromRGB(210, 210, 225)
+toggleBtn.TextSize = 13
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.BorderSizePixel = 0
+toggleBtn.Active = true
+toggleBtn.Draggable = true
+toggleBtn.ZIndex = 99
+toggleBtn.Parent = screenGui
+
+local toggleBtnCorner = Instance.new("UICorner")
+toggleBtnCorner.CornerRadius = UDim.new(0, 7)
+toggleBtnCorner.Parent = toggleBtn
+
+-- Toggle button logic
+local toggleDragged = false
+toggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleDragged = false
+    end
+end)
+toggleBtn.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        toggleDragged = true
+    end
+end)
+
+toggleBtn.MouseButton1Click:Connect(function()
+    if toggleDragged then return end
+    menuOpen = not menuOpen
+    menuFrame.Visible = menuOpen
+end)
+
+-- Lock Gui untuk toggle button
+if guiLocked then
+    toggleBtn.Draggable = false
+end
+
+-- =====================
 -- LIBRARY EXPORT
 -- =====================
 Library.QuickPanel = QuickPanel
