@@ -1485,16 +1485,12 @@ makeIosToggle("Gui Transparency", settScroll, 9, function(state)
     creditFrame.BackgroundTransparency = state and 0.12 or 0
 end)
 
-makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, settScroll, 10, function(val)
-    notifSound = val
-end)
-
 makeCardBtn("Reset Gui Position", "97462463002118", settScroll, 11, function()
     mainFrame.Position   = MAIN_DEFAULT_POS
     menuFrame.Position   = MENU_DEFAULT_POS
     creditFrame.Position = CREDIT_DEFAULT_POS
     toggleBtn.Position   = TOGGLE_DEFAULT_POS
-    showNotification({ message = "Gui Position Reset", barColor = "Default", textColor = "Default" })
+    showNotification({ message = "Gui Position Reset", barColor = "Violet", textColor = "Default" })
 end, true)
 
 -- =====================
