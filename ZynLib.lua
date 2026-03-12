@@ -1449,6 +1449,203 @@ makeIosToggle("Anti Afk", credScroll, 6, function(state)
 end)
 
 -- =====================
+-- DROPDOWN SYSTEM (MOVE HERE - BEFORE SETTINGS TAB)
+-- =====================
+local activeDropdown = nil
+
+local function closeActiveDropdown()
+    if activeDropdown then
+        activeDropdown:Destroy()
+        activeDropdown = nil
+    end
+end
+
+-- Close dropdown bila klik luar
+Services.Input.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if activeDropdown then
+            task.defer(function()
+                closeActiveDropdown()
+            end)
+        end
+    end
+end)
+
+local function makeDropdownRow(labelText, options, savedValue, parent, order, onChange)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 32)
+    row.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    row.BorderSizePixel = 0
+    row.LayoutOrder = order
+    row.Parent = parent
+
+    local rowCorner = Instance.new("UICorner")
+    rowCorner.CornerRadius = UDim.new(0, 7)
+    rowCorner.Parent = row
+
+    local rowStroke = Instance.new("UIStroke")
+    rowStroke.Thickness = 1
+    rowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    rowStroke.Color = Color3.fromRGB(30, 30, 38)
+    rowStroke.Parent = row
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.5, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = Color3.fromRGB(160, 160, 175)
+    lbl.TextStrokeTransparency = 1
+    lbl.TextSize = 11
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    local dropBtn = Instance.new("TextButton")
+    dropBtn.Size = UDim2.new(0, 80, 0, 22)
+    dropBtn.Position = UDim2.new(1, -86, 0.5, -11)
+    dropBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+    dropBtn.BorderSizePixel = 0
+    dropBtn.Text = savedValue
+    dropBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+    dropBtn.TextStrokeTransparency = 1
+    dropBtn.TextSize = 10
+    dropBtn.Font = Enum.Font.GothamBold
+    dropBtn.ZIndex = 4
+    dropBtn.Parent = row
+
+    local dropBtnCorner = Instance.new("UICorner")
+    dropBtnCorner.CornerRadius = UDim.new(0, 6)
+    dropBtnCorner.Parent = dropBtn
+
+    local dropBtnStroke = Instance.new("UIStroke")
+    dropBtnStroke.Thickness = 1
+    dropBtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    dropBtnStroke.Color = Color3.fromRGB(50, 50, 65)
+    dropBtnStroke.Parent = dropBtn
+
+    local arrow = Instance.new("TextLabel")
+    arrow.Size = UDim2.new(0, 14, 1, 0)
+    arrow.Position = UDim2.new(1, -16, 0, 0)
+    arrow.BackgroundTransparency = 1
+    arrow.Text = "v"
+    arrow.TextColor3 = Color3.fromRGB(120, 120, 140)
+    arrow.TextSize = 10
+    arrow.Font = Enum.Font.Gotham
+    arrow.ZIndex = 5
+    arrow.Parent = dropBtn
+
+    dropBtn.MouseEnter:Connect(function()
+        Services.Tween:Create(dropBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(28, 28, 38)}):Play()
+        Services.Tween:Create(dropBtnStroke, TweenInfo.new(0.15), {Color = Color3.fromRGB(120, 120, 150)}):Play()
+    end)
+    dropBtn.MouseLeave:Connect(function()
+        Services.Tween:Create(dropBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(18, 18, 24)}):Play()
+        Services.Tween:Create(dropBtnStroke, TweenInfo.new(0.15), {Color = Color3.fromRGB(50, 50, 65)}):Play()
+    end)
+
+    dropBtn.MouseButton1Click:Connect(function()
+        if activeDropdown then
+            closeActiveDropdown()
+            return
+        end
+
+        local ratio = math.max(1, currentScale / GUI_SCALE_DEFAULT)
+        local ddW   = math.floor(DROPDOWN_BASE_W * ratio)
+        local itemH = math.floor(DROPDOWN_BASE_ITEM_H * ratio)
+        local maxVisible = math.min(#options, 4)
+        local ddH = itemH * maxVisible + 8
+
+        local absPos = dropBtn.AbsolutePosition
+        local absSize = dropBtn.AbsoluteSize
+
+        local popup = Instance.new("Frame")
+        popup.Size = UDim2.new(0, ddW, 0, ddH)
+        popup.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
+        popup.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
+        popup.BorderSizePixel = 0
+        popup.ZIndex = 200
+        popup.Parent = screenGui
+
+        local popupCorner = Instance.new("UICorner")
+        popupCorner.CornerRadius = UDim.new(0, 7)
+        popupCorner.Parent = popup
+
+        local popupStroke = Instance.new("UIStroke")
+        popupStroke.Thickness = 1
+        popupStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        popupStroke.Color = Color3.fromRGB(55, 55, 70)
+        popupStroke.Parent = popup
+
+        local popupScroll = Instance.new("ScrollingFrame")
+        popupScroll.Size = UDim2.new(1, -8, 1, -8)
+        popupScroll.Position = UDim2.new(0, 4, 0, 4)
+        popupScroll.BackgroundTransparency = 1
+        popupScroll.BorderSizePixel = 0
+        popupScroll.ScrollBarThickness = 0
+        popupScroll.ScrollBarImageTransparency = 1
+        popupScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        popupScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        popupScroll.ZIndex = 201
+        popupScroll.Parent = popup
+
+        local popupLayout = Instance.new("UIListLayout")
+        popupLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        popupLayout.Padding = UDim.new(0, 2)
+        popupLayout.Parent = popupScroll
+
+        for idx, opt in ipairs(options) do
+            local isSelected = (opt == dropBtn.Text)
+
+            local item = Instance.new("TextButton")
+            item.Size = UDim2.new(1, 0, 0, itemH - 2)
+            item.BackgroundColor3 = isSelected and Color3.fromRGB(40, 40, 60) or Color3.fromRGB(20, 20, 26)
+            item.BorderSizePixel = 0
+            item.Text = opt
+            item.TextColor3 = isSelected and Color3.fromRGB(180, 180, 255) or Color3.fromRGB(160, 160, 175)
+            item.TextSize = 10
+            item.Font = isSelected and Enum.Font.GothamBold or Enum.Font.Gotham
+            item.LayoutOrder = idx
+            item.ZIndex = 202
+            item.Parent = popupScroll
+
+            local itemCorner = Instance.new("UICorner")
+            itemCorner.CornerRadius = UDim.new(0, 5)
+            itemCorner.Parent = item
+
+            item.MouseEnter:Connect(function()
+                if not isSelected then
+                    Services.Tween:Create(item, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30, 30, 42)}):Play()
+                    item.TextColor3 = Color3.fromRGB(210, 210, 225)
+                end
+            end)
+            item.MouseLeave:Connect(function()
+                if not isSelected then
+                    Services.Tween:Create(item, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(20, 20, 26)}):Play()
+                    item.TextColor3 = Color3.fromRGB(160, 160, 175)
+                end
+            end)
+
+            item.MouseButton1Click:Connect(function()
+                dropBtn.Text = opt
+                notifSound = opt
+                ConfigSystem:UpdateSetting(ConfigSystem.CurrentConfig, "notifSound", opt)
+                if onChange then onChange(opt) end
+                closeActiveDropdown()
+            end)
+        end
+
+        activeDropdown = popup
+        popup.BackgroundTransparency = 1
+        Services.Tween:Create(popup, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 0
+        }):Play()
+    end)
+
+    return dropBtn
+end
+
+-- =====================
 -- SETTINGS TAB (FIXED CONTENT - Partial)
 -- =====================
 local settScroll = tabContents["Settings"]
@@ -1486,6 +1683,10 @@ makeIosToggle("Auto Hide Quick Panel", settScroll, 5, function(state) end)
 makeIosToggle("Disable Main Scale", settScroll, 7, function(state) end)
 
 makeIosToggle("Disable Menu Scale", settScroll, 8, function(state) end)
+
+makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, settScroll, 10, function(val)
+    notifSound = val
+end)
 
 makeIosToggle("Gui Transparency", settScroll, 9, function(state)
     mainFrame.BackgroundTransparency   = state and 0.12 or 0
@@ -1570,32 +1771,6 @@ scaleValBtn.Text = ""
 scaleValBtn.ZIndex = 7
 scaleValBtn.Parent = scaleRow
 
-scaleValBtn.MouseButton1Click:Connect(function()
-    scaleValLbl.Visible = false
-    scaleValBox.Visible = true
-    scaleValBox.Text = tostring(math.floor(((currentScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)) * 100 + 0.5))
-    scaleValBox:CaptureFocus()
-end)
-
-scaleValBox.FocusLost:Connect(function(enterPressed)
-    local input = tonumber(scaleValBox.Text)
-    if input then
-        input = math.clamp(math.floor(input + 0.5), 0, 100)
-        local newScale = math.floor(GUI_SCALE_MIN + (input / 100) * (GUI_SCALE_MAX - GUI_SCALE_MIN) + 0.5)
-        local snappedDelta = (newScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
-        if sliderFill and sliderFill.Parent then
-            Services.Tween:Create(sliderFill, TweenInfo.new(0.15), {Size = UDim2.new(snappedDelta, 0, 1, 0)}):Play()
-        end
-        if sliderThumb and sliderThumb.Parent then
-            Services.Tween:Create(sliderThumb, TweenInfo.new(0.15), {Position = UDim2.new(snappedDelta, -5.5, 0.5, -5.5)}):Play()
-        end
-        scaleValLbl.Text = math.floor(snappedDelta * 100 + 0.5) .. "%"
-        applyGuiScale(newScale)
-    end
-    scaleValBox.Visible = false
-    scaleValLbl.Visible = true
-end)
-
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(1, -106, 0, 5)
 sliderBg.Position = UDim2.new(0, 68, 0.5, -2)
@@ -1637,6 +1812,29 @@ sliderClickDetector.BackgroundTransparency = 1
 sliderClickDetector.Text = ""
 sliderClickDetector.ZIndex = 5
 sliderClickDetector.Parent = scaleRow
+
+-- NOW ALL CALLBACKS CAN ACCESS sliderFill & sliderThumb
+scaleValBtn.MouseButton1Click:Connect(function()
+    scaleValLbl.Visible = false
+    scaleValBox.Visible = true
+    scaleValBox.Text = tostring(math.floor(((currentScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)) * 100 + 0.5))
+    scaleValBox:CaptureFocus()
+end)
+
+scaleValBox.FocusLost:Connect(function(enterPressed)
+    local input = tonumber(scaleValBox.Text)
+    if input then
+        input = math.clamp(math.floor(input + 0.5), 0, 100)
+        local newScale = math.floor(GUI_SCALE_MIN + (input / 100) * (GUI_SCALE_MAX - GUI_SCALE_MIN) + 0.5)
+        local snappedDelta = (newScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
+        Services.Tween:Create(sliderFill, TweenInfo.new(0.15), {Size = UDim2.new(snappedDelta, 0, 1, 0)}):Play()
+        Services.Tween:Create(sliderThumb, TweenInfo.new(0.15), {Position = UDim2.new(snappedDelta, -5.5, 0.5, -5.5)}):Play()
+        scaleValLbl.Text = math.floor(snappedDelta * 100 + 0.5) .. "%"
+        applyGuiScale(newScale)
+    end
+    scaleValBox.Visible = false
+    scaleValLbl.Visible = true
+end)
 
 local scaleDragging = false
 local scaleMoveConn, scaleReleaseConn
