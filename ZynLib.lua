@@ -1479,6 +1479,14 @@ makeIosToggle("Disable Server Full Error", settScroll, 6, function(state)
     end
 end)
 
+makeIosToggle("Show Menu on Start", settScroll, 4, function(state) end)
+
+makeIosToggle("Auto Hide Quick Panel", settScroll, 5, function(state) end)
+
+makeIosToggle("Disable Main Scale", settScroll, 7, function(state) end)
+
+makeIosToggle("Disable Menu Scale", settScroll, 8, function(state) end)
+
 makeIosToggle("Gui Transparency", settScroll, 9, function(state)
     mainFrame.BackgroundTransparency   = state and 0.12 or 0
     menuFrame.BackgroundTransparency   = state and 0.12 or 0
@@ -1492,6 +1500,183 @@ makeCardBtn("Reset Gui Position", "97462463002118", settScroll, 11, function()
     toggleBtn.Position   = TOGGLE_DEFAULT_POS
     showNotification({ message = "Gui Position Reset", barColor = "Violet", textColor = "Default" })
 end, true)
+
+-- Gui Scale row
+local scaleRow = Instance.new("Frame")
+scaleRow.Size = UDim2.new(1, 0, 0, 28)
+scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+scaleRow.BackgroundTransparency = 0.17
+scaleRow.BorderSizePixel = 0
+scaleRow.LayoutOrder = 12
+scaleRow.Parent = settScroll
+
+local scaleRowCorner = Instance.new("UICorner")
+scaleRowCorner.CornerRadius = UDim.new(0, 6)
+scaleRowCorner.Parent = scaleRow
+
+local scaleRowStroke = Instance.new("UIStroke")
+scaleRowStroke.Thickness = 1
+scaleRowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+scaleRowStroke.Color = Color3.fromRGB(40, 40, 52)
+scaleRowStroke.Parent = scaleRow
+
+local scaleLbl = Instance.new("TextLabel")
+scaleLbl.Size = UDim2.new(0, 55, 1, 0)
+scaleLbl.Position = UDim2.new(0, 8, 0, 0)
+scaleLbl.BackgroundTransparency = 1
+scaleLbl.Text = "Gui Scale"
+scaleLbl.TextColor3 = Color3.fromRGB(160, 160, 175)
+scaleLbl.TextStrokeTransparency = 1
+scaleLbl.TextSize = 10
+scaleLbl.Font = Enum.Font.Gotham
+scaleLbl.TextXAlignment = Enum.TextXAlignment.Left
+scaleLbl.Parent = scaleRow
+
+local initPct = math.floor(((currentScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)) * 100 + 0.5)
+
+local scaleValLbl = Instance.new("TextLabel")
+scaleValLbl.Size = UDim2.new(0, 30, 1, 0)
+scaleValLbl.Position = UDim2.new(1, -34, 0, 0)
+scaleValLbl.BackgroundTransparency = 1
+scaleValLbl.Text = initPct .. "%"
+scaleValLbl.TextColor3 = Color3.fromRGB(140, 140, 255)
+scaleValLbl.TextStrokeTransparency = 1
+scaleValLbl.TextSize = 10
+scaleValLbl.Font = Enum.Font.GothamBold
+scaleValLbl.TextXAlignment = Enum.TextXAlignment.Right
+scaleValLbl.Parent = scaleRow
+
+local scaleValBox = Instance.new("TextBox")
+scaleValBox.Size = UDim2.new(0, 30, 1, 0)
+scaleValBox.Position = UDim2.new(1, -34, 0, 0)
+scaleValBox.BackgroundTransparency = 1
+scaleValBox.Text = ""
+scaleValBox.PlaceholderText = ""
+scaleValBox.TextColor3 = Color3.fromRGB(140, 140, 255)
+scaleValBox.TextStrokeTransparency = 1
+scaleValBox.TextSize = 10
+scaleValBox.Font = Enum.Font.GothamBold
+scaleValBox.TextXAlignment = Enum.TextXAlignment.Right
+scaleValBox.ClearTextOnFocus = true
+scaleValBox.Visible = false
+scaleValBox.ZIndex = 6
+scaleValBox.Parent = scaleRow
+
+local scaleValBtn = Instance.new("TextButton")
+scaleValBtn.Size = UDim2.new(0, 30, 1, 0)
+scaleValBtn.Position = UDim2.new(1, -34, 0, 0)
+scaleValBtn.BackgroundTransparency = 1
+scaleValBtn.Text = ""
+scaleValBtn.ZIndex = 7
+scaleValBtn.Parent = scaleRow
+
+scaleValBtn.MouseButton1Click:Connect(function()
+    scaleValLbl.Visible = false
+    scaleValBox.Visible = true
+    scaleValBox.Text = tostring(math.floor(((currentScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)) * 100 + 0.5))
+    scaleValBox:CaptureFocus()
+end)
+
+scaleValBox.FocusLost:Connect(function(enterPressed)
+    local input = tonumber(scaleValBox.Text)
+    if input then
+        input = math.clamp(math.floor(input + 0.5), 0, 100)
+        local newScale = math.floor(GUI_SCALE_MIN + (input / 100) * (GUI_SCALE_MAX - GUI_SCALE_MIN) + 0.5)
+        local snappedDelta = (newScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
+        if sliderFill and sliderFill.Parent then
+            Services.Tween:Create(sliderFill, TweenInfo.new(0.15), {Size = UDim2.new(snappedDelta, 0, 1, 0)}):Play()
+        end
+        if sliderThumb and sliderThumb.Parent then
+            Services.Tween:Create(sliderThumb, TweenInfo.new(0.15), {Position = UDim2.new(snappedDelta, -5.5, 0.5, -5.5)}):Play()
+        end
+        scaleValLbl.Text = math.floor(snappedDelta * 100 + 0.5) .. "%"
+        applyGuiScale(newScale)
+    end
+    scaleValBox.Visible = false
+    scaleValLbl.Visible = true
+end)
+
+local sliderBg = Instance.new("Frame")
+sliderBg.Size = UDim2.new(1, -106, 0, 5)
+sliderBg.Position = UDim2.new(0, 68, 0.5, -2)
+sliderBg.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+sliderBg.BorderSizePixel = 0
+sliderBg.Parent = scaleRow
+
+local sliderBgCorner = Instance.new("UICorner")
+sliderBgCorner.CornerRadius = UDim.new(1, 0)
+sliderBgCorner.Parent = sliderBg
+
+local initDelta = (currentScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
+
+local sliderFill = Instance.new("Frame")
+sliderFill.Size = UDim2.new(initDelta, 0, 1, 0)
+sliderFill.BackgroundColor3 = Color3.fromRGB(100, 100, 200)
+sliderFill.BorderSizePixel = 0
+sliderFill.Parent = sliderBg
+
+local sliderFillCorner = Instance.new("UICorner")
+sliderFillCorner.CornerRadius = UDim.new(1, 0)
+sliderFillCorner.Parent = sliderFill
+
+local sliderThumb = Instance.new("Frame")
+sliderThumb.Size = UDim2.new(0, 11, 0, 11)
+sliderThumb.Position = UDim2.new(initDelta, -5.5, 0.5, -5.5)
+sliderThumb.BackgroundColor3 = Color3.fromRGB(180, 180, 255)
+sliderThumb.BorderSizePixel = 0
+sliderThumb.ZIndex = 2
+sliderThumb.Parent = sliderBg
+
+local sliderThumbCorner = Instance.new("UICorner")
+sliderThumbCorner.CornerRadius = UDim.new(1, 0)
+sliderThumbCorner.Parent = sliderThumb
+
+local sliderClickDetector = Instance.new("TextButton")
+sliderClickDetector.Size = UDim2.new(1, 0, 1, 0)
+sliderClickDetector.BackgroundTransparency = 1
+sliderClickDetector.Text = ""
+sliderClickDetector.ZIndex = 5
+sliderClickDetector.Parent = scaleRow
+
+local scaleDragging = false
+local scaleMoveConn, scaleReleaseConn
+
+sliderClickDetector.InputBegan:Connect(function(input)
+    if scaleDragging then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local isTouch = (input.UserInputType == Enum.UserInputType.Touch)
+        scaleDragging = true
+        local function updateScale()
+            local inputPos = isTouch and input.Position.X or Services.Input:GetMouseLocation().X
+            local delta = math.clamp((inputPos - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+            local newScale = math.floor(GUI_SCALE_MIN + delta * (GUI_SCALE_MAX - GUI_SCALE_MIN) + 0.5)
+            local snappedDelta = (newScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
+            Services.Tween:Create(sliderFill, TweenInfo.new(0.05), {Size = UDim2.new(snappedDelta, 0, 1, 0)}):Play()
+            Services.Tween:Create(sliderThumb, TweenInfo.new(0.05), {Position = UDim2.new(snappedDelta, -5.5, 0.5, -5.5)}):Play()
+            scaleValLbl.Text = math.floor(snappedDelta * 100 + 0.5) .. "%"
+            applyGuiScale(newScale)
+        end
+        updateScale()
+        scaleMoveConn = Services.RunService.RenderStepped:Connect(updateScale)
+        scaleReleaseConn = Services.Input.InputEnded:Connect(function(endInput)
+            if endInput == input then
+                if scaleMoveConn then scaleMoveConn:Disconnect() end
+                if scaleReleaseConn then scaleReleaseConn:Disconnect() end
+                scaleDragging = false
+            end
+        end)
+    end
+end)
+
+local function doResetScale()
+    local defDelta = (GUI_SCALE_DEFAULT - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
+    Services.Tween:Create(sliderFill, TweenInfo.new(0.15), {Size = UDim2.new(defDelta, 0, 1, 0)}):Play()
+    Services.Tween:Create(sliderThumb, TweenInfo.new(0.15), {Position = UDim2.new(defDelta, -5.5, 0.5, -5.5)}):Play()
+    scaleValLbl.Text = math.floor(defDelta * 100 + 0.5) .. "%"
+    applyGuiScale(GUI_SCALE_DEFAULT)
+end
+
+resetScaleCredit.MouseButton1Click:Connect(doResetScale)
 
 -- =====================
 -- MINIMIZE LOGIC
